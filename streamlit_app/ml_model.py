@@ -145,26 +145,37 @@ def train_model():
 def predict_rent_payment(features):
     model_path = "models/rent_predictor.pkl"
 
-    # Load model only if it exists
+    # ✅ Check if model exists
     if not os.path.exists(model_path):
-        print("❌ Error: Model not found. Please train the model first using `train_model()`.")
-        return None
+        print("❌ Model file not found! Train the model first.")
+        return "Error: Model not found!"
 
-    model = joblib.load(model_path)
+    try:
+        model = joblib.load(model_path)
+        print("✅ Model loaded successfully!")
+    except Exception as e:
+        print(f"❌ Error loading model: {e}")
+        return f"Error loading model: {e}"
 
     # ✅ Apply same transformations as in training
-    features["monthly_income"] = np.log1p(features["monthly_income"])
-    features["rent_amount"] = np.log1p(features["rent_amount"])
-    features["payment_delay"] = np.log1p(features["payment_delay"] + 1)
-    features["income_rent_ratio"] = features["monthly_income"] / (features["rent_amount"] + 1)
+    try:
+        features["monthly_income"] = np.log1p(features["monthly_income"])
+        features["rent_amount"] = np.log1p(features["rent_amount"])
+        features["payment_delay"] = np.log1p(features["payment_delay"] + 1)
+        features["income_rent_ratio"] = features["monthly_income"] / (features["rent_amount"] + 1)
 
-    # ✅ Ensure the correct order of features
-    feature_list = ["monthly_income", "rent_amount", "previous_late_payments", "payment_delay", "income_rent_ratio"]
-    input_data = np.array([features[f] for f in feature_list]).reshape(1, -1)
+        # ✅ Ensure correct feature order
+        feature_list = ["monthly_income", "rent_amount", "previous_late_payments", "payment_delay", "income_rent_ratio"]
+        input_data = np.array([features[f] for f in feature_list]).reshape(1, -1)
 
-    prediction = model.predict(input_data)[0]
-    
-    return reverse_status_mapping[prediction]  
+        # ✅ Predict
+        prediction = model.predict(input_data)[0]
+
+        return reverse_status_mapping.get(prediction, "Unknown")  # Avoid KeyError
+    except Exception as e:
+        print(f"❌ Error in prediction: {e}")
+        return f"Error in prediction: {e}"
+ 
  
 
   
